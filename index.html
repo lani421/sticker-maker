@@ -1,193 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sticker Maker</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f0f0f0;
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      flex-direction: column;
-    }
-    #sticker-area {
-      width: 300px;
-      height: 300px;
-      margin: 20px;
-      background: white;
-      border: 2px dashed #ccc;
-      position: relative;
-      overflow: hidden;
-    }
-    .image-element, .qr-element, .text-element {
-      position: absolute;
-      cursor: move;
-      user-select: none;
-    }
-    #controls {
-      text-align: center;
-      margin-top: 20px;
-    }
-    button {
-      padding: 10px 15px;
-      margin: 5px;
-      cursor: pointer;
-    }
-    input[type="file"], input[type="text"] {
-      margin: 10px 0;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticker Maker</title>
+    <link rel="stylesheet" href="style.css">
+    <script defer src="script.js"></script>
 </head>
 <body>
+    <div id="sticker-maker-container">
+        <h1>Sticker Maker</h1>
+        <div id="canvas-container">
+            <canvas id="sticker-canvas" width="500" height="500"></canvas>
+        </div>
+        <button id="add-text-btn">텍스트 추가</button>
+        <button id="download-btn">다운로드</button>
+    </div>
 
-<h2>커스터마이징 스티커 만들기</h2>
+    <script>
+        const canvas = document.getElementById('sticker-canvas');
+        const ctx = canvas.getContext('2d');
+        const addTextBtn = document.getElementById('add-text-btn');
+        const downloadBtn = document.getElementById('download-btn');
 
-<div id="sticker-area"></div>
+        // 기본 배경 색상
+        ctx.fillStyle = "#f4f4f4"; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-<div id="controls">
-  <input type="file" id="image-input" onchange="addImage(event)">
-  <input type="text" id="text-input" placeholder="텍스트 입력">
-  <button onclick="addText()">텍스트 추가</button>
-  <input type="text" id="qr-text-input" placeholder="QR 코드에 넣을 텍스트">
-  <button onclick="addQRCode()">QR 코드 추가</button>
-  <button onclick="saveSticker()">저장하기</button>
-</div>
+        // 텍스트 추가 버튼 클릭 시
+        addTextBtn.addEventListener('click', () => {
+            const text = prompt('스티커에 추가할 텍스트를 입력하세요:');
+            if (text) {
+                ctx.font = "30px Arial";
+                ctx.fillStyle = "#333";
+                ctx.fillText(text, 50, 50); // 텍스트 위치를 설정
+            }
+        });
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-<script>
-  const stickerArea = document.getElementById('sticker-area');
-
-  // 이미지 추가 함수
-  function addImage(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const img = document.createElement('img');
-      img.src = e.target.result;
-      img.className = 'image-element';
-      img.style.left = '50px';
-      img.style.top = '50px';
-      img.style.width = '100px';
-      img.style.height = '100px';
-
-      img.onmousedown = function(e) {
-        let isDragging = true;
-        let offsetX = e.offsetX;
-        let offsetY = e.offsetY;
-
-        document.onmousemove = function(e) {
-          if (isDragging) {
-            img.style.left = (e.pageX - stickerArea.offsetLeft - offsetX) + 'px';
-            img.style.top = (e.pageY - stickerArea.offsetTop - offsetY) + 'px';
-          }
-        };
-
-        document.onmouseup = function() {
-          isDragging = false;
-        };
-      };
-
-      stickerArea.appendChild(img);
-    };
-
-    reader.readAsDataURL(file);
-  }
-
-  // 텍스트 추가 함수
-  function addText() {
-    const text = document.getElementById('text-input').value;
-    if (text === "") return;
-
-    const textElement = document.createElement('div');
-    textElement.className = 'text-element';
-    textElement.innerText = text;
-    textElement.style.fontSize = '20px';
-    textElement.style.color = 'black';
-    textElement.style.left = '100px';
-    textElement.style.top = '100px';
-
-    let isDragging = false;
-    let offsetX, offsetY;
-
-    textElement.onmousedown = function(e) {
-      isDragging = true;
-      offsetX = e.offsetX;
-      offsetY = e.offsetY;
-    };
-
-    document.onmousemove = function(e) {
-      if (isDragging) {
-        textElement.style.left = (e.pageX - stickerArea.offsetLeft - offsetX) + 'px';
-        textElement.style.top = (e.pageY - stickerArea.offsetTop - offsetY) + 'px';
-      }
-    };
-
-    document.onmouseup = function() {
-      isDragging = false;
-    };
-
-    stickerArea.appendChild(textElement);
-    document.getElementById('text-input').value = ""; // 텍스트 입력 후 초기화
-  }
-
-  // QR 코드 추가 함수
-  function addQRCode() {
-    const qrText = document.getElementById('qr-text-input').value;
-    if (qrText === "") return;
-
-    QRCode.toDataURL(qrText, { width: 100, height: 100 }, function(err, url) {
-      const img = document.createElement('img');
-      img.src = url;
-      img.className = 'qr-element';
-      img.style.left = '150px';
-      img.style.top = '150px';
-      img.style.width = '100px';
-      img.style.height = '100px';
-
-      let isDragging = false;
-      let offsetX, offsetY;
-
-      img.onmousedown = function(e) {
-        isDragging = true;
-        offsetX = e.offsetX;
-        offsetY = e.offsetY;
-      };
-
-      document.onmousemove = function(e) {
-        if (isDragging) {
-          img.style.left = (e.pageX - stickerArea.offsetLeft - offsetX) + 'px';
-          img.style.top = (e.pageY - stickerArea.offsetTop - offsetY) + 'px';
-        }
-      };
-
-      document.onmouseup = function() {
-        isDragging = false;
-      };
-
-      stickerArea.appendChild(img);
-      document.getElementById('qr-text-input').value = ""; // QR 코드 텍스트 입력 후 초기화
-    });
-  }
-
-  // 저장하기 함수
-  function saveSticker() {
-    html2canvas(stickerArea).then(canvas => {
-      const link = document.createElement('a');
-      link.download = 'sticker.png';
-      link.href = canvas.toDataURL();
-      link.click();
-    });
-  }
-</script>
-
+        // 다운로드 버튼 클릭 시
+        downloadBtn.addEventListener('click', () => {
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.href = image;
+            link.download = 'sticker.png';
+            link.click();
+        });
+    </script>
 </body>
 </html>
